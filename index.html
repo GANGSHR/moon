@@ -116,7 +116,7 @@
     display:flex;align-items:center;justify-content:center;color:var(--text-soft);
     font-size:13px;overflow:hidden;text-align:center;padding:0 20px;
   }
-  .banner-img img{width:100%;height:100%;object-fit:cover;display:block;}
+  .banner-img img{width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.08);}
 
   /* product cards */
   .product-card{
@@ -441,12 +441,12 @@
 <script>
 /* ============ 基本設定：請依實際情況修改 ============ */
 // Google Apps Script 部署後取得的網址，貼在這裡
-const APPS_SCRIPT_URL = "請貼上你的 Google Apps Script Web App網址";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx4gniTSBN38YA0qDpm7_rwVDuv7S8RR3mG9tCkDMfSWi9eEdDlBL7FDjaeUr9tkBEEUw/exec";
 
 // EmailJS 設定，請依你自己的 EmailJS 帳號填入
-const EMAILJS_PUBLIC_KEY = "你的EmailJS Public Key";
-const EMAILJS_SERVICE_ID = "你的EmailJS Service ID";
-const EMAILJS_TEMPLATE_ID = "你的EmailJS Template ID";
+const EMAILJS_PUBLIC_KEY = "Gz12-P0eutZoR1x4V";
+const EMAILJS_SERVICE_ID = "service_7voasbi";
+const EMAILJS_TEMPLATE_ID = "template_2intqif";
 
 emailjs.init(EMAILJS_PUBLIC_KEY);
 
@@ -457,7 +457,8 @@ function onDateSelected(){
   const msg = document.getElementById('dateConfirmMsg');
   msg.innerHTML = `✓ 已選擇自取日期
     <span class="date-highlight">${label}</span>
-    <span class="confirm-warn">請確認自取日期無誤，送出訂購後不受理更改。</span>`;
+    <span class="confirm-warn">請確認自取日期無誤，送出訂購後不受理更改。</span>
+    <span class="confirm-warn">如無法準時自取，請選擇宅配。</span>`;
   msg.classList.add('show');
   document.getElementById('lockedHint').style.display = 'none';
   document.getElementById('restOfForm').classList.add('unlocked');
@@ -651,6 +652,7 @@ function formatDeadline(){
 }
 
 /* ============ 正式送出：寫入 Google 表單/試算表 + 寄送確認信 ============ */
+/* ============ 正式送出：寫入 Google 試算表 + 寄送確認信 ============ */
 async function finalSubmit(){
   const btn = document.getElementById('finalSubmitBtn');
   btn.disabled = true;
@@ -660,6 +662,7 @@ async function finalSubmit(){
   const dateEl = document.getElementById('pickupDate');
   const dateLabel = dateEl.options[dateEl.selectedIndex].text;
 
+  // 整理要發送的資料
   const orderData = {
     送出時間: new Date().toLocaleString('zh-TW'),
     自取日期: dateLabel,
@@ -672,23 +675,26 @@ async function finalSubmit(){
     商品金額: o.productTotal,
     合計金額: o.grandTotal,
   };
-  o.items.forEach(p=>{
+
+  // 動態加入購買商品數量
+  o.items.forEach(p => {
     orderData[p.name] = state[p.id].qty;
   });
 
-  try{
-    // 1) 寫入 Google 試算表
+  try {
+    // 1) 寫入 Google 試算表（改用 URLSearchParams 傳送 JSON 格式字串）
+    const formData = new URLSearchParams();
+    formData.append("data", JSON.stringify(orderData));
+
     await fetch(APPS_SCRIPT_URL, {
       method: 'POST',
-      mode: 'no-cors',
-      headers: {'Content-Type':'text/plain'},
-      body: JSON.stringify(orderData)
+      body: formData
     });
 
     // 2) 寄送確認信（EmailJS）
-    const itemLines = o.items.map(p=>{
-      return `${p.name} ×${state[p.id].qty}　$${(p.price*state[p.id].qty).toLocaleString()}`;
-    }).join('\n') + `\n提袋 ×${o.bagCount}　${o.bagFee>0 ? '$'+o.bagFee.toLocaleString()+'（加收）' : '$0'}`;
+    const itemLines = o.items.map(p => {
+      return `${p.name} ×${state[p.id].qty} $${(p.price*state[p.id].qty).toLocaleString()}`;
+    }).join('\n') + `\n提袋 ×${o.bagCount} ${o.bagFee>0 ? '$'+o.bagFee.toLocaleString()+'（加收）' : '$0'}`;
 
     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
       to_email: orderData.電子郵件,
@@ -700,9 +706,8 @@ async function finalSubmit(){
       order_total: '$' + o.grandTotal.toLocaleString(),
     });
 
-  } catch(err){
-    console.error(err);
-    // 即使寄信/寫入發生問題，仍讓客人看到私訊提醒，避免漏單；請自行檢查後台資料
+  } catch(err) {
+    console.error("送出過程發生錯誤：", err);
   }
 
   document.getElementById('deadlineText').textContent = formatDeadline();
