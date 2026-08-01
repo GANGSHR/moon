@@ -189,6 +189,15 @@
 
   .err{color:var(--warn-red);font-size:12.5px;margin-top:6px;display:none;}
 
+  .missing-alert{
+    display:none;background:var(--warn-bg);border:1.5px solid var(--warn-red);border-radius:10px;
+    padding:14px 16px;margin-bottom:14px;font-size:13.5px;
+  }
+  .missing-alert .title{color:var(--warn-red);font-weight:700;margin-bottom:8px;}
+  .missing-alert ul{margin:0;padding-left:18px;}
+  .missing-alert li{margin-bottom:4px;}
+  .missing-alert a{color:var(--brown-dark);font-weight:700;text-decoration:underline;cursor:pointer;}
+
   /* modal */
   .overlay{
     position:fixed;inset:0;background:rgba(74,59,41,.55);display:none;
@@ -413,6 +422,8 @@
     </div>
     <div class="err" id="err-agree">請詳閱並勾選同意退貨退款政策</div>
 
+    <div class="missing-alert" id="missingFieldsAlert"></div>
+
     <button class="submit-btn" id="submitBtn" onclick="openConfirm()">確認送出訂單 →</button>
   </div>
 
@@ -445,8 +456,6 @@
 
     <a class="contact-btn" href="https://m.me/1463033500627955" target="_blank" rel="noopener">💬 立刻 FB 私訊我們</a>
     <a class="contact-btn line" href="https://lin.ee/WvzhpQW" target="_blank" rel="noopener">📱 立刻 LINE 官方私訊</a>
-
-    <div class="close-note" onclick="document.getElementById('doneOverlay').classList.remove('show')">點擊此處關閉</div>
   </div>
 </div>
 
@@ -620,7 +629,41 @@ function validate(){
   if(showErr('err-phone', !/^[0-9\-+ ]{8,}$/.test(phoneEl.value.trim()))) ok = false;
   if(showErr('err-agree', !agreeEl.checked)) ok = false;
 
+  const missing = [];
+  if(!dateEl.value) missing.push({label:'選擇自取日期', id:'pickupDate'});
+  if(o.items.length === 0) missing.push({label:'選擇商品', id:'productList'});
+  if(bagInvalid) missing.push({label:'提袋數量', id:'bagCount'});
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailEl.value)) missing.push({label:'電子郵件', id:'email'});
+  if(!fblineEl.value.trim()) missing.push({label:'Facebook 或 LINE 暱稱', id:'fbline'});
+  if(!nameEl.value.trim()) missing.push({label:'訂購人中文姓名', id:'name'});
+  if(!/^[0-9\-+ ]{8,}$/.test(phoneEl.value.trim())) missing.push({label:'聯絡電話', id:'phone'});
+  if(!agreeEl.checked) missing.push({label:'同意退貨退款政策', id:'agree'});
+  renderMissingAlert(missing);
+
   return ok;
+}
+
+function renderMissingAlert(missing){
+  const box = document.getElementById('missingFieldsAlert');
+  if(missing.length === 0){
+    box.style.display = 'none';
+    box.innerHTML = '';
+    return;
+  }
+  let html = '<div class="title">⚠ 還有以下必填欄位尚未完成，請往上補齊：</div><ul>';
+  missing.forEach(m=>{
+    html += `<li><a onclick="scrollToField('${m.id}')">${m.label}</a></li>`;
+  });
+  html += '</ul>';
+  box.innerHTML = html;
+  box.style.display = 'block';
+}
+
+function scrollToField(id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.scrollIntoView({behavior:'smooth', block:'center'});
+  if(typeof el.focus === 'function') el.focus();
 }
 
 function openConfirm(){
