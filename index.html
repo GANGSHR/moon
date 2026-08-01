@@ -189,15 +189,6 @@
 
   .err{color:var(--warn-red);font-size:12.5px;margin-top:6px;display:none;}
 
-  .missing-alert{
-    display:none;background:var(--warn-bg);border:1.5px solid var(--warn-red);border-radius:10px;
-    padding:14px 16px;margin-bottom:14px;font-size:13.5px;
-  }
-  .missing-alert .title{color:var(--warn-red);font-weight:700;margin-bottom:8px;}
-  .missing-alert ul{margin:0;padding-left:18px;}
-  .missing-alert li{margin-bottom:4px;}
-  .missing-alert a{color:var(--brown-dark);font-weight:700;text-decoration:underline;cursor:pointer;}
-
   /* modal */
   .overlay{
     position:fixed;inset:0;background:rgba(74,59,41,.55);display:none;
@@ -285,7 +276,7 @@
     <div class="section-title"><span class="bar"></span>自取資訊</div>
     <div class="info-box">
       <div>📍 地址：高雄市三民區九如一路230巷18號1樓</div>
-      <div>🕒 自取時段：週四五 17:30–18:00／週六日 15:30–16:00</div>
+      <div>🕒 自取時段：週四五 17:30–18:00／週六日 13:30–14:00</div>
       <div class="warn">⚠ 不提早開放，也不延後關閉，請準時前往</div>
     </div>
 
@@ -297,6 +288,7 @@
       <option value="9/5(六) 13:30-14:00">9月5日（六）13:30–14:00</option>
       <option value="9/11(五) 17:30-18:00">9月11日（五）17:30–18:00</option>
       <option value="9/12(六) 13:30-14:00">9月12日（六）13:30–14:00</option>
+      <option value="9/17(四) 17:30-18:00">9月17日（四）17:30–18:00</option>
       <option value="9/18(五) 17:30-18:00">9月18日（五）17:30–18:00</option>
       <option value="9/19(六) 13:30-14:00">9月19日（六）13:30–14:00</option>
       <option value="9/24(五) 17:30-18:00">9月24日（五）17:30–18:00</option>
@@ -421,8 +413,6 @@
     </div>
     <div class="err" id="err-agree">請詳閱並勾選同意退貨退款政策</div>
 
-    <div class="missing-alert" id="missingFieldsAlert"></div>
-
     <button class="submit-btn" id="submitBtn" onclick="openConfirm()">確認送出訂單 →</button>
   </div>
 
@@ -455,6 +445,8 @@
 
     <a class="contact-btn" href="https://m.me/1463033500627955" target="_blank" rel="noopener">💬 立刻 FB 私訊我們</a>
     <a class="contact-btn line" href="https://lin.ee/WvzhpQW" target="_blank" rel="noopener">📱 立刻 LINE 官方私訊</a>
+
+    <div class="close-note" onclick="document.getElementById('doneOverlay').classList.remove('show')">點擊此處關閉</div>
   </div>
 </div>
 
@@ -486,10 +478,10 @@ function onDateSelected(){
 
 /* ============ 商品資料：每個品項可放一張照片，img 請自行換成實際照片網址 ============ */
 const PRODUCTS = [
-  { id:'combo', name:'中秋大綜合', price:650, img:'https://raw.githubusercontent.com/GANGSHR/moon/refs/heads/main/2.jpg', contents:['蛋黃酥×2','小月娘酥×2','鳳梨柚香酥×4'] },
-  { id:'yolk6', name:'6入蛋黃酥', price:620, img:'https://raw.githubusercontent.com/GANGSHR/moon/refs/heads/main/3.jpg', contents:['蛋黃酥×6'] },
-  { id:'moon6', name:'6入小月娘酥', price:630, img:'https://raw.githubusercontent.com/GANGSHR/moon/refs/heads/main/4.jpg', contents:['小月娘酥×6'] },
-  { id:'mix6', name:'6入綜合禮', price:630, img:'https://raw.githubusercontent.com/GANGSHR/moon/refs/heads/main/5.jpg', contents:['蛋黃酥×3','小月娘酥×3'] },
+  { id:'combo', name:'中秋大綜合', price:620, img:'https://raw.githubusercontent.com/GANGSHR/moon/refs/heads/main/2.jpg', contents:['蛋黃酥×2','小月娘酥×2','鳳梨柚香酥×4'] },
+  { id:'yolk6', name:'6入蛋黃酥', price:600, img:'https://raw.githubusercontent.com/GANGSHR/moon/refs/heads/main/3.jpg', contents:['蛋黃酥×6'] },
+  { id:'moon6', name:'6入小月娘酥', price:600, img:'https://raw.githubusercontent.com/GANGSHR/moon/refs/heads/main/4.jpg', contents:['小月娘酥×6'] },
+  { id:'mix6', name:'6入綜合禮', price:600, img:'https://raw.githubusercontent.com/GANGSHR/moon/refs/heads/main/5.jpg', contents:['蛋黃酥×3','小月娘酥×3'] },
 ];
 
 const state = {};
@@ -628,41 +620,7 @@ function validate(){
   if(showErr('err-phone', !/^[0-9\-+ ]{8,}$/.test(phoneEl.value.trim()))) ok = false;
   if(showErr('err-agree', !agreeEl.checked)) ok = false;
 
-  const missing = [];
-  if(!dateEl.value) missing.push({label:'選擇自取日期', id:'pickupDate'});
-  if(o.items.length === 0) missing.push({label:'選擇商品', id:'productList'});
-  if(bagInvalid) missing.push({label:'提袋數量', id:'bagCount'});
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailEl.value)) missing.push({label:'電子郵件', id:'email'});
-  if(!fblineEl.value.trim()) missing.push({label:'Facebook 或 LINE 暱稱', id:'fbline'});
-  if(!nameEl.value.trim()) missing.push({label:'訂購人中文姓名', id:'name'});
-  if(!/^[0-9\-+ ]{8,}$/.test(phoneEl.value.trim())) missing.push({label:'聯絡電話', id:'phone'});
-  if(!agreeEl.checked) missing.push({label:'同意退貨退款政策', id:'agree'});
-  renderMissingAlert(missing);
-
   return ok;
-}
-
-function renderMissingAlert(missing){
-  const box = document.getElementById('missingFieldsAlert');
-  if(missing.length === 0){
-    box.style.display = 'none';
-    box.innerHTML = '';
-    return;
-  }
-  let html = '<div class="title">⚠ 還有以下必填欄位尚未完成，請往上補齊：</div><ul>';
-  missing.forEach(m=>{
-    html += `<li><a onclick="scrollToField('${m.id}')">${m.label}</a></li>`;
-  });
-  html += '</ul>';
-  box.innerHTML = html;
-  box.style.display = 'block';
-}
-
-function scrollToField(id){
-  const el = document.getElementById(id);
-  if(!el) return;
-  el.scrollIntoView({behavior:'smooth', block:'center'});
-  if(typeof el.focus === 'function') el.focus();
 }
 
 function openConfirm(){
